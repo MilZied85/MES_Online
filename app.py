@@ -7,7 +7,7 @@ import pandas as pd
 
 # Configurer la page en mode plein écran / TV
 st.set_page_config(
-    page_title="Live Atelier TV Lite",
+    page_title="Live Atelier",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -72,6 +72,12 @@ st.markdown("""
     <style>
         .stApp { background-color: #0e1117; color: white; }
         [data-testid="stHeader"] { display: none; }
+        
+        /* --- AJOUT : Masquage complet du menu Streamlit et du Footer --- */
+        #MainMenu { visibility: hidden; }
+        footer { visibility: hidden; }
+        header { visibility: hidden; }
+        
         .block-container { 
             padding-top: 1rem !important; 
             padding-bottom: 0rem !important; 
