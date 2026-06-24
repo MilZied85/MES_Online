@@ -134,7 +134,7 @@ while True:
             # --- EN-TÊTE DU TABLEAU DE BORD ---
             h1, h2, h3 = st.columns([2, 1, 1])
             with h1:
-                st.markdown(f"<h1 style='color:#28a745; margin:0;'>🏭 ÉQUIPE {equipe} [Cloud]</h1>", unsafe_allow_html=True)
+                st.markdown(f"<h1 style='color:#28a745; margin:0;'>🏭 ÉQUIPE {equipe} </h1>", unsafe_allow_html=True)
             with h2:
                 st.markdown(f"<div style='text-align:center;'><p style='margin:0;color:#808495;'>TAUX ATELIER</p><h2 style='margin:0;'>{taux_moy:.1f}%</h2></div>", unsafe_allow_html=True)
             with h3:
