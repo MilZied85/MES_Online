@@ -175,7 +175,7 @@ while True:
 <div class="taux-value">{taux:.1f}%</div>
 <div class="stats-row">
 <span>⏱️ {chrono} min</span>
-<span>📦 {score:.1f} m</span>
+<span>📦 {score / 100:.1f} m</span>
 </div>
 <div style="font-size:0.8rem; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">
 ÉTAT : <span style="font-size:0.95rem;">{status_text}</span>
