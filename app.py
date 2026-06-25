@@ -1,6 +1,6 @@
 import streamlit as st
 from supabase import create_client, Client
-from datetime import datetime
+from datetime import datetime, timezone,timedelta
 import time
 import re
 import pandas as pd
@@ -144,7 +144,8 @@ while True:
             with h2:
                 st.markdown(f"<div style='text-align:center;'><p style='margin:0;color:#808495;'>TAUX ATELIER</p><h2 style='margin:0;'>{taux_moy:.1f}%</h2></div>", unsafe_allow_html=True)
             with h3:
-                st.markdown(f"<div style='text-align:right;'><p style='margin:0;color:#808495;'>MISE À JOUR</p><h2 style='margin:0;'>{now.strftime('%H:%M:%S')}</h2></div>", unsafe_allow_html=True)
+                now_tunis = datetime.now(timezone(timedelta(hours=1)))
+                st.markdown(f"<div style='text-align:right;'><p style='margin:0;color:#808495;'>MISE À JOUR</p><h2 style='margin:0;'>{now_tunis.strftime('%H:%M:%S')}</h2></div>", unsafe_allow_html=True)
 
             st.markdown("---")
 
