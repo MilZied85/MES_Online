@@ -113,7 +113,7 @@ st.markdown("""
 
         /* Style compact pour les machines à N bandes (8) */
         .bandes-compact {
-            font-size: 0.78rem;
+            font-size: 1rem;
             color: #f3f4f6;
             padding: 4px 6px;
             line-height: 1.5;
