@@ -1,6 +1,6 @@
 import streamlit as st
 from supabase import create_client, Client
-from datetime import datetime, timezone,timedelta
+from datetime import datetime, timezone, timedelta
 import time
 import re
 import pandas as pd
@@ -13,7 +13,6 @@ st.set_page_config(
 )
 
 # --- INITIALISATION DE SUPABASE ---
-# Idéalement, utilisez st.secrets pour la production, ou mettez-les ici pour le test
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
@@ -57,7 +56,6 @@ def formatter_article(designation):
 def get_supabase_data():
     try:
         supabase = get_supabase_client()
-        # On récupère toutes les lignes triées par l'ID de la machine
         response = supabase.table("live_dashboard_snapshot").select("*").order("machine_id").execute()
         
         if response.data:
@@ -73,7 +71,6 @@ st.markdown("""
         .stApp { background-color: #0e1117; color: white; }
         [data-testid="stHeader"] { display: none; }
         
-        /* --- AJOUT : Masquage complet du menu Streamlit et du Footer --- */
         #MainMenu { visibility: hidden; }
         footer { visibility: hidden; }
         header { visibility: hidden; }
@@ -113,6 +110,15 @@ st.markdown("""
         .bande-line:last-child { border-bottom: none; }
         .bande-label { color: #9ca3af; font-weight: normal; }
         .bande-val { font-size: 1.2rem; font-weight: bold; color: #f3f4f6; }
+
+        /* Style compact pour les machines à N bandes (8) */
+        .bandes-compact {
+            font-size: 0.78rem;
+            color: #f3f4f6;
+            padding: 4px 6px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -127,10 +133,8 @@ while True:
         if df.empty:
             st.error("⚠️ Aucune donnée disponible sur le Cloud Supabase. Vérifiez le service de synchronisation local.")
         else:
-            # Récupération des colonnes (les noms correspondent aux colonnes créées dans Supabase)
             equipe = df['equipe_en_cours'].iloc[0] if 'equipe_en_cours' in df.columns else "Inconnue"
             
-            # Calcul du taux moyen (en excluant les machines Non Connectées 'NC')
             if 'statut' in df.columns and 'taux_exploit_machine' in df.columns:
                 df_filtré = df[df['statut'] != 'NC']
                 taux_moy = df_filtré['taux_exploit_machine'].mean() if not df_filtré.empty else 0.0
@@ -149,25 +153,48 @@ while True:
 
             st.markdown("---")
 
-            # --- GRILLE DES 30 MACHINES (6 COLONNES) ---
+            # --- GRILLE DES MACHINES (6 COLONNES) ---
             cols = st.columns(6)
             status_labels = {1: "ON", 0: "OFF", -1: "NC"}
 
             for index, row in df.iterrows():
                 with cols[index % 6]:
-                    # Gestion des types et des noms de colonnes provenant de Supabase
                     status_val = int(row.get('statut')) if row.get('statut') is not None else -1
                     status_text = status_labels.get(status_val, "NC")
-                    
-                    txt_b1 = formatter_article(row.get('de1'))
-                    txt_b2 = formatter_article(row.get('de2'))
-                    
+
                     chrono = int(row.get('chrono_minutes')) if row.get('chrono_minutes') is not None else 0
-                    
-                    # Le score venant de C# a déjà été divisé ou traité si nécessaire
                     score = float(row.get('score_equipe')) if row.get('score_equipe') is not None else 0.0
                     taux = float(row.get('taux_exploit_machine')) if row.get('taux_exploit_machine') is not None else 0.0
                     machine_nom = str(row.get('machine_nom', 'M-?'))
+
+                    # 🆕 Bandes actives de cette machine (2 ou N, via nb_bandes_actives/bandes_texte)
+                    val_nb_bandes = row.get('nb_bandes_actives')
+                    nb_bandes = int(val_nb_bandes) if val_nb_bandes is not None else 0
+                    bandes_texte = row.get('bandes_texte')
+
+                    if nb_bandes == 0 or bandes_texte in (None, 'Vide'):
+                        bandes_html = """
+<div class="bandes-container">
+<div class="bande-line"><span class="bande-label">Bandes:</span><span class="bande-val">Vide</span></div>
+</div>
+"""
+                    elif nb_bandes <= 2:
+                        # Machines normales : affichage empilé B1 / B2 comme avant
+                        articles = [formatter_article(a.strip()) for a in bandes_texte.split('|')]
+                        lignes = ""
+                        for i, txt in enumerate(articles, start=1):
+                            lignes += f"""
+<div class="bande-line">
+<span class="bande-label">B{i}:</span>
+<span class="bande-val">{txt}</span>
+</div>
+"""
+                        bandes_html = f'<div class="bandes-container">{lignes}</div>'
+                    else:
+                        # Machines à N bandes (ex: 8) : ligne compacte "60mm Gris | 80mm Noir | ..."
+                        articles = [formatter_article(a.strip()) for a in bandes_texte.split('|')]
+                        ligne_compacte = " | ".join(articles)
+                        bandes_html = f'<div class="bandes-container"><div class="bandes-compact">{ligne_compacte}</div></div>'
 
                     html_card = f"""
 <div class="card-container card-{status_text}">
@@ -180,20 +207,10 @@ while True:
 <div style="font-size:0.8rem; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">
 ÉTAT : <span style="font-size:0.95rem;">{status_text}</span>
 </div>
-<div class="bandes-container">
-<div class="bande-line">
-<span class="bande-label">B1:</span>
-<span class="bande-val">{txt_b1}</span>
-</div>
-<div class="bande-line">
-<span class="bande-label">B2:</span>
-<span class="bande-val">{txt_b2}</span>
-</div>
-</div>
+{bandes_html}
 </div>
 """.strip()
 
                     st.markdown(html_card, unsafe_allow_html=True)
 
-    # Pause de 15 secondes avant la prochaine lecture sur le Cloud
     time.sleep(15)
