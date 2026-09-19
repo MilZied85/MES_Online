@@ -119,6 +119,24 @@ st.markdown("""
             line-height: 1.5;
             word-wrap: break-word;
         }
+
+                .machine-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 15px;
+        }
+        @media (max-width: 1200px) {
+            .machine-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+        @media (max-width: 900px) {
+            .machine-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 600px) {
+            .machine-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 400px) {
+            .machine-grid { grid-template-columns: 1fr; }
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -153,50 +171,46 @@ while True:
 
             st.markdown("---")
 
-            # --- GRILLE DES MACHINES (6 COLONNES) ---
-            cols = st.columns(6)
+            # --- GRILLE DES MACHINES (grille CSS, ordre garanti même sur mobile) ---
             status_labels = {1: "ON", 0: "OFF", -1: "NC"}
+            cartes_html = []
 
             for index, row in df.iterrows():
-                with cols[index % 6]:
-                    status_val = int(row.get('statut')) if row.get('statut') is not None else -1
-                    status_text = status_labels.get(status_val, "NC")
+                status_val = int(row.get('statut')) if row.get('statut') is not None else -1
+                status_text = status_labels.get(status_val, "NC")
 
-                    chrono = int(row.get('chrono_minutes')) if row.get('chrono_minutes') is not None else 0
-                    score = float(row.get('score_equipe')) if row.get('score_equipe') is not None else 0.0
-                    taux = float(row.get('taux_exploit_machine')) if row.get('taux_exploit_machine') is not None else 0.0
-                    machine_nom = str(row.get('machine_nom', 'M-?'))
+                chrono = int(row.get('chrono_minutes')) if row.get('chrono_minutes') is not None else 0
+                score = float(row.get('score_equipe')) if row.get('score_equipe') is not None else 0.0
+                taux = float(row.get('taux_exploit_machine')) if row.get('taux_exploit_machine') is not None else 0.0
+                machine_nom = str(row.get('machine_nom', 'M-?'))
 
-                    # 🆕 Bandes actives de cette machine (2 ou N, via nb_bandes_actives/bandes_texte)
-                    val_nb_bandes = row.get('nb_bandes_actives')
-                    nb_bandes = int(val_nb_bandes) if val_nb_bandes is not None else 0
-                    bandes_texte = row.get('bandes_texte')
+                val_nb_bandes = row.get('nb_bandes_actives')
+                nb_bandes = int(val_nb_bandes) if val_nb_bandes is not None else 0
+                bandes_texte = row.get('bandes_texte')
 
-                    if nb_bandes == 0 or bandes_texte in (None, 'Vide'):
-                        bandes_html = """
+                if nb_bandes == 0 or bandes_texte in (None, 'Vide'):
+                    bandes_html = """
 <div class="bandes-container">
 <div class="bande-line"><span class="bande-label">Bandes:</span><span class="bande-val">Vide</span></div>
 </div>
 """
-                    elif nb_bandes <= 2:
-                        # Machines normales : affichage empilé B1 / B2 comme avant
-                        articles = [formatter_article(a.strip()) for a in bandes_texte.split('|')]
-                        lignes = ""
-                        for i, txt in enumerate(articles, start=1):
-                            lignes += f"""
+                elif nb_bandes <= 2:
+                    articles = [formatter_article(a.strip()) for a in bandes_texte.split('|')]
+                    lignes = ""
+                    for i, txt in enumerate(articles, start=1):
+                        lignes += f"""
 <div class="bande-line">
 <span class="bande-label">B{i}:</span>
 <span class="bande-val">{txt}</span>
 </div>
 """
-                        bandes_html = f'<div class="bandes-container">{lignes}</div>'
-                    else:
-                        # Machines à N bandes (ex: 8) : ligne compacte "60mm Gris | 80mm Noir | ..."
-                        articles = [formatter_article(a.strip()) for a in bandes_texte.split('|')]
-                        ligne_compacte = " | ".join(articles)
-                        bandes_html = f'<div class="bandes-container"><div class="bandes-compact">{ligne_compacte}</div></div>'
+                    bandes_html = f'<div class="bandes-container">{lignes}</div>'
+                else:
+                    articles = [formatter_article(a.strip()) for a in bandes_texte.split('|')]
+                    ligne_compacte = " | ".join(articles)
+                    bandes_html = f'<div class="bandes-container"><div class="bandes-compact">{ligne_compacte}</div></div>'
 
-                    html_card = f"""
+                html_card = f"""
 <div class="card-container card-{status_text}">
 <div class="machine-name">{machine_nom}</div>
 <div class="taux-value">{taux:.1f}%</div>
@@ -211,6 +225,9 @@ while True:
 </div>
 """.strip()
 
-                    st.markdown(html_card, unsafe_allow_html=True)
+                cartes_html.append(html_card)
+
+            grille_complete = f'<div class="machine-grid">{"".join(cartes_html)}</div>'
+            st.markdown(grille_complete, unsafe_allow_html=True)
 
     time.sleep(15)
