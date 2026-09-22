@@ -38,7 +38,9 @@ def formatter_article(designation):
         
         mapping_mots = {
             "gris": "Gr", "noir": "Nr", "blanc": "Blc", "bleu": "Bl",
-            "ajouré": "Aj", "ajoure": "Aj", "plein bleu bb": "PlBl", "plein bleu": "PlBl"
+            "ajouré": "Aj", "ajoure": "Aj", "plein bleu bb": "PlBl", "plein bleu": "PlBl", 
+            "noir noir": "NrNr", "noir vert": "NrVr", "noir bleu": "NrBl", "tresse noir": "Tresse Nr",
+            "tresse blanc": "Tresse Blc", "tresse marine": "Tresse Mar", "tresse beige": "Tresse Bg" 
         }
         
         if couleur in mapping_mots:
