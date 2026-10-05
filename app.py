@@ -1,5 +1,6 @@
 import streamlit as st
 from supabase import create_client, Client
+from supabase.client import ClientOptions
 from datetime import datetime, timezone, timedelta
 import time
 import re
@@ -18,40 +19,35 @@ SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
 @st.cache_resource
 def get_supabase_client() -> Client:
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
+    return create_client(
+        SUPABASE_URL,
+        SUPABASE_KEY,
+        options=ClientOptions(postgrest_client_timeout=10)
+    )
 
 # --- FONCTION DE FORMATAGE DES ARTICLES ---
 def formatter_article(designation):
     if designation is None or pd.isna(designation):
         return "Vide"
-        
     des_clean = str(designation).strip()
-    
     if des_clean in ["", "---", "None", "null", "Inconnu / Aucun"]:
         return "Vide"
-
     match = re.match(r"(\d+)\s*mm\s+(.+)", des_clean, re.IGNORECASE)
-    
     if match:
         largeur = match.group(1)
         couleur = match.group(2).strip().lower()
-        
         mapping_mots = {
             "gris": "Gr", "noir": "Nr", "blanc": "Blc", "bleu": "Bl",
-            "ajouré": "Aj", "ajoure": "Aj", "plein bleu bb": "PlBl", "plein bleu": "PlBl", 
+            "ajouré": "Aj", "ajoure": "Aj", "plein bleu bb": "PlBl", "plein bleu": "PlBl",
             "noir noir": "NrNr", "noir vert": "NrVr", "noir bleu": "NrBl", "tresse noir": "Tresse Nr",
-            "tresse blanc": "Tresse Blc", "tresse marine": "Tresse Mar", "tresse beige": "Tresse Bg" 
+            "tresse blanc": "Tresse Blc", "tresse marine": "Tresse Mar", "tresse beige": "Tresse Bg"
         }
-        
         if couleur in mapping_mots:
             return f"{mapping_mots[couleur]}/{largeur}"
-            
         for mot, abr in mapping_mots.items():
             if mot in couleur:
                 return f"{abr}/{largeur}"
-                
         return f"{couleur[:3].capitalize()}/{largeur}"
-        
     return des_clean
 
 # --- CHARGEMENT DES DONNÉES DEPUIS SUPABASE ---
@@ -59,7 +55,6 @@ def get_supabase_data():
     try:
         supabase = get_supabase_client()
         response = supabase.table("live_dashboard_snapshot").select("*").order("machine_id").execute()
-        
         if response.data:
             return pd.DataFrame(response.data)
         return pd.DataFrame()
@@ -69,77 +64,72 @@ def get_supabase_data():
 
 # --- INJECTION CSS ---
 st.markdown("""
-    <style>
-        .stApp { background-color: #0e1117; color: white; }
-        [data-testid="stHeader"] { display: none; }
-        
-        #MainMenu { visibility: hidden; }
-        footer { visibility: hidden; }
-        header { visibility: hidden; }
-        
-        .block-container { 
-            padding-top: 1rem !important; 
-            padding-bottom: 0rem !important; 
-        }
-        @keyframes blinker { 50% { opacity: 0.3; } }
-        .card-container {
-            border-radius: 12px;
-            padding: 12px;
-            text-align: center;
-            margin-bottom: 15px;
-            border: 1px solid #333;
-        }
-        .card-ON  { background-color: #064e3b; border-color: #059669; }
-        .card-OFF { background-color: #7f1d1d; border-color: #dc2626; animation: blinker 2s linear infinite; }
-        .card-NC  { background-color: #1f2937; border-color: #4b5563; opacity: 0.7; }
-        .machine-name { font-size: 1.5rem; font-weight: bold; margin-bottom: 2px; }
-        .taux-value { font-size: 2.8rem; font-weight: 800; margin: 2px 0; }
-        .stats-row { font-size: 0.9rem; color: #9ca3af; display: flex; justify-content: space-around; margin-bottom: 5px; }
-        .bandes-container {
-            background-color: rgba(0, 0, 0, 0.25);
-            border-radius: 6px;
-            padding: 4px;
-            margin-top: 8px;
-            font-size: 0.85rem;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .bande-line {
-            display: flex;
-            justify-content: space-between;
-            padding: 2px 5px;
-            border-bottom: 1px dashed rgba(255,255,255,0.1);
-        }
-        .bande-line:last-child { border-bottom: none; }
-        .bande-label { color: #9ca3af; font-weight: normal; }
-        .bande-val { font-size: 1.2rem; font-weight: bold; color: #f3f4f6; }
-
-        /* Style compact pour les machines à N bandes (8) */
-        .bandes-compact {
-            font-size: 1rem;
-            color: #f3f4f6;
-            padding: 4px 6px;
-            line-height: 1.5;
-            word-wrap: break-word;
-        }
-
-                .machine-grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 15px;
-        }
-        @media (max-width: 1200px) {
-            .machine-grid { grid-template-columns: repeat(4, 1fr); }
-        }
-        @media (max-width: 900px) {
-            .machine-grid { grid-template-columns: repeat(3, 1fr); }
-        }
-        @media (max-width: 600px) {
-            .machine-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (max-width: 400px) {
-            .machine-grid { grid-template-columns: 1fr; }
-        }
-    </style>
+<style>
+.stApp { background-color: #0e1117; color: white; }
+[data-testid="stHeader"] { display: none; }
+#MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
+header { visibility: hidden; }
+.block-container {
+    padding-top: 1rem !important;
+    padding-bottom: 0rem !important;
+}
+@keyframes blinker { 50% { opacity: 0.3; } }
+.card-container {
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    margin-bottom: 15px;
+    border: 1px solid #333;
+}
+.card-ON { background-color: #064e3b; border-color: #059669; }
+.card-OFF { background-color: #7f1d1d; border-color: #dc2626; animation: blinker 2s linear infinite; }
+.card-NC { background-color: #1f2937; border-color: #4b5563; opacity: 0.7; }
+.machine-name { font-size: 1.5rem; font-weight: bold; margin-bottom: 2px; }
+.taux-value { font-size: 2.8rem; font-weight: 800; margin: 2px 0; }
+.stats-row { font-size: 0.9rem; color: #9ca3af; display: flex; justify-content: space-around; margin-bottom: 5px; }
+.bandes-container {
+    background-color: rgba(0, 0, 0, 0.25);
+    border-radius: 6px;
+    padding: 4px;
+    margin-top: 8px;
+    font-size: 0.85rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.bande-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 5px;
+    border-bottom: 1px dashed rgba(255,255,255,0.1);
+}
+.bande-line:last-child { border-bottom: none; }
+.bande-label { color: #9ca3af; font-weight: normal; }
+.bande-val { font-size: 1.2rem; font-weight: bold; color: #f3f4f6; }
+.bandes-compact {
+    font-size: 1rem;
+    color: #f3f4f6;
+    padding: 4px 6px;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+.machine-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 15px;
+}
+@media (max-width: 1200px) {
+    .machine-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 900px) {
+    .machine-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 600px) {
+    .machine-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 400px) {
+    .machine-grid { grid-template-columns: 1fr; }
+}
+</style>
 """, unsafe_allow_html=True)
 
 # Zone dynamique de rafraîchissement
@@ -154,7 +144,7 @@ while True:
             st.error("⚠️ Aucune donnée disponible sur le Cloud Supabase. Vérifiez le service de synchronisation local.")
         else:
             equipe = df['equipe_en_cours'].iloc[0] if 'equipe_en_cours' in df.columns else "Inconnue"
-            
+
             if 'statut' in df.columns and 'taux_exploit_machine' in df.columns:
                 df_filtré = df[df['statut'] != 'NC']
                 taux_moy = df_filtré['taux_exploit_machine'].mean() if not df_filtré.empty else 0.0
@@ -180,7 +170,6 @@ while True:
             for index, row in df.iterrows():
                 status_val = int(row.get('statut')) if row.get('statut') is not None else -1
                 status_text = status_labels.get(status_val, "NC")
-
                 chrono = int(row.get('chrono_minutes')) if row.get('chrono_minutes') is not None else 0
                 score = float(row.get('score_equipe')) if row.get('score_equipe') is not None else 0.0
                 taux = float(row.get('taux_exploit_machine')) if row.get('taux_exploit_machine') is not None else 0.0
@@ -192,20 +181,20 @@ while True:
 
                 if nb_bandes == 0 or bandes_texte in (None, 'Vide'):
                     bandes_html = """
-<div class="bandes-container">
-<div class="bande-line"><span class="bande-label">Bandes:</span><span class="bande-val">Vide</span></div>
-</div>
-"""
+                    <div class="bandes-container">
+                        <div class="bande-line"><span class="bande-label">Bandes:</span><span class="bande-val">Vide</span></div>
+                    </div>
+                    """
                 elif nb_bandes <= 2:
                     articles = [formatter_article(a.strip()) for a in bandes_texte.split('|')]
                     lignes = ""
                     for i, txt in enumerate(articles, start=1):
                         lignes += f"""
-<div class="bande-line">
-<span class="bande-label">B{i}:</span>
-<span class="bande-val">{txt}</span>
-</div>
-"""
+                        <div class="bande-line">
+                            <span class="bande-label">B{i}:</span>
+                            <span class="bande-val">{txt}</span>
+                        </div>
+                        """
                     bandes_html = f'<div class="bandes-container">{lignes}</div>'
                 else:
                     articles = [formatter_article(a.strip()) for a in bandes_texte.split('|')]
@@ -213,20 +202,19 @@ while True:
                     bandes_html = f'<div class="bandes-container"><div class="bandes-compact">{ligne_compacte}</div></div>'
 
                 html_card = f"""
-<div class="card-container card-{status_text}">
-<div class="machine-name">{machine_nom}</div>
-<div class="taux-value">{taux:.1f}%</div>
-<div class="stats-row">
-<span>⏱️ {chrono} min</span>
-<span>📦 {score / 100:.1f} m</span>
-</div>
-<div style="font-size:0.8rem; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">
-ÉTAT : <span style="font-size:0.95rem;">{status_text}</span>
-</div>
-{bandes_html}
-</div>
-""".strip()
-
+                <div class="card-container card-{status_text}">
+                    <div class="machine-name">{machine_nom}</div>
+                    <div class="taux-value">{taux:.1f}%</div>
+                    <div class="stats-row">
+                        <span>⏱️ {chrono} min</span>
+                        <span>📦 {score / 100:.1f} m</span>
+                    </div>
+                    <div style="font-size:0.8rem; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">
+                        ÉTAT : <span style="font-size:0.95rem;">{status_text}</span>
+                    </div>
+                    {bandes_html}
+                </div>
+                """.strip()
                 cartes_html.append(html_card)
 
             grille_complete = f'<div class="machine-grid">{"".join(cartes_html)}</div>'
