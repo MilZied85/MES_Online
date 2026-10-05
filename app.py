@@ -180,41 +180,42 @@ while True:
                 bandes_texte = row.get('bandes_texte')
 
                 if nb_bandes == 0 or bandes_texte in (None, 'Vide'):
-                    bandes_html = """
-                    <div class="bandes-container">
-                        <div class="bande-line"><span class="bande-label">Bandes:</span><span class="bande-val">Vide</span></div>
-                    </div>
-                    """
+                    bandes_html = (
+                        '<div class="bandes-container">'
+                        '<div class="bande-line"><span class="bande-label">Bandes:</span>'
+                        '<span class="bande-val">Vide</span></div>'
+                        '</div>'
+                    )
                 elif nb_bandes <= 2:
                     articles = [formatter_article(a.strip()) for a in bandes_texte.split('|')]
                     lignes = ""
                     for i, txt in enumerate(articles, start=1):
-                        lignes += f"""
-                        <div class="bande-line">
-                            <span class="bande-label">B{i}:</span>
-                            <span class="bande-val">{txt}</span>
-                        </div>
-                        """
+                        lignes += (
+                            '<div class="bande-line">'
+                            f'<span class="bande-label">B{i}:</span>'
+                            f'<span class="bande-val">{txt}</span>'
+                            '</div>'
+                        )
                     bandes_html = f'<div class="bandes-container">{lignes}</div>'
                 else:
                     articles = [formatter_article(a.strip()) for a in bandes_texte.split('|')]
                     ligne_compacte = " | ".join(articles)
                     bandes_html = f'<div class="bandes-container"><div class="bandes-compact">{ligne_compacte}</div></div>'
 
-                html_card = f"""
-                <div class="card-container card-{status_text}">
-                    <div class="machine-name">{machine_nom}</div>
-                    <div class="taux-value">{taux:.1f}%</div>
-                    <div class="stats-row">
-                        <span>⏱️ {chrono} min</span>
-                        <span>📦 {score / 100:.1f} m</span>
-                    </div>
-                    <div style="font-size:0.8rem; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">
-                        ÉTAT : <span style="font-size:0.95rem;">{status_text}</span>
-                    </div>
-                    {bandes_html}
-                </div>
-                """.strip()
+                html_card = (
+                    f'<div class="card-container card-{status_text}">'
+                    f'<div class="machine-name">{machine_nom}</div>'
+                    f'<div class="taux-value">{taux:.1f}%</div>'
+                    '<div class="stats-row">'
+                    f'<span>⏱️ {chrono} min</span>'
+                    f'<span>📦 {score / 100:.1f} m</span>'
+                    '</div>'
+                    '<div style="font-size:0.8rem; font-weight:bold; letter-spacing:1px; margin-bottom:5px;">'
+                    f'ÉTAT : <span style="font-size:0.95rem;">{status_text}</span>'
+                    '</div>'
+                    f'{bandes_html}'
+                    '</div>'
+                )
                 cartes_html.append(html_card)
 
             grille_complete = f'<div class="machine-grid">{"".join(cartes_html)}</div>'
